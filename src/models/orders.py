@@ -1,5 +1,7 @@
 import enum
-from sqlalchemy import Column, Integer, String, Enum, ForeignKey
+from datetime import datetime
+
+from sqlalchemy import Column, Integer, String, Enum, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 from config.db import Base
 
@@ -18,3 +20,5 @@ class Order(Base):
     status = Column(Enum(OrderStatus), default=OrderStatus.pending)
     user_id = Column(Integer, ForeignKey("users.id"))
     owner = relationship("User", back_populates='orders')
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
