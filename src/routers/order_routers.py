@@ -1,12 +1,12 @@
 from typing import Annotated, List
-from fastapi import Depends, APIRouter
+from fastapi import Depends, APIRouter, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from auth.oauth2 import oauth2_schema, get_current_user
 from config.db import get_session
 from crud.order_crud import OrdersCrud
 from exceptions import UserNotFoundException
 from schemas.order_schema import OrderCreate, OrderUpdateStatus, OrderInfo
+from services.send_mail import EmailService
 
 router = APIRouter()
 
@@ -20,7 +20,14 @@ async def create_order(
     current_user = await get_current_user(access_token, session)
     if not current_user:
         raise UserNotFoundException()
-    await OrdersCrud.create_order(order_data, current_user, session)
+    order = await OrdersCrud.create_order(order_data, current_user, session)
+
+    # отправка уведомления на почту о создании нового заказа
+    mail_service = EmailService()
+    await mail_service.notify_order_creation(
+        to_email=current_user.email,
+        order_data=order
+    )
     return order_data
 
 
@@ -50,5 +57,16 @@ async def update_status_order(
     current_user = await get_current_user(access_token, session)
     if not current_user:
         raise UserNotFoundException()
-    order = await OrdersCrud().update_status_order(session, order_data, current_user)
-    return order
+    previous_status = order_data.status
+    if previous_status != order_data.status:
+        order = await OrdersCrud().update_status_order(session, order_data, current_user)
+        # отправка уведомления об изменении статуса заказа на почту
+        email_service = EmailService()
+        await email_service.notify_order_status_update(
+            to_email=current_user.email,
+            order_data=order_data,
+            previous_status=previous_status
+        )
+        return order
+    else:
+        raise HTTPException(status_code=409, detail="Conflict: status not changed")

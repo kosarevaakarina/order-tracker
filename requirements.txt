@@ -9,3 +9,4 @@ asyncpg==0.30.0
 fastapi-users[sqlalchemy,oauth]
 python-jose==3.3.0
 passlib==1.7.4
+aiosmtplib==3.0.2
