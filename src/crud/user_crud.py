@@ -16,11 +16,11 @@ class UserCrud:
     @staticmethod
     async def get_user(session: AsyncSession, user_id: int = None, email: str = None, username: str = None):
         if user_id:
-            result = await session.execute(select(User).where(User.id == user_id))
+            result = await session.execute(select(User).where(User.id == user_id, User.is_active == True))
         if email:
-            result = await session.execute(select(User).where(User.email == email))
+            result = await session.execute(select(User).where(User.email == email, User.is_active == True))
         if username:
-            result = await session.execute(select(User).where(User.username == username))
+            result = await session.execute(select(User).where(User.username == username, User.is_active == True))
         return result.scalars().first()
 
     @staticmethod
