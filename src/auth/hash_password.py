@@ -10,5 +10,5 @@ class HashPassword:
         return password_context.hash(password)
 
     @staticmethod
-    def verify(hashed_password, plain_password):
+    def verify(hashed_password: str, plain_password: str):
         return password_context.verify(plain_password, hashed_password)
