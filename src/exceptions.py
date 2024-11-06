@@ -53,3 +53,12 @@ class CredentialException(HTTPException):
             detail='Could not validate credentials',
             headers={'WWW-Authenticate': 'Bearer'}
         )
+
+
+class JSONSerializationError(HTTPException):
+    def __init__(self, e):
+        logger.error(f"JSON serialization error: {e}")
+        super().__init__(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"JSON serialization error: {e}",
+        )
