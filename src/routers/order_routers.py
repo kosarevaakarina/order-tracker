@@ -42,10 +42,7 @@ async def get_orders(
 ):
     """Просмотр заказов, пользователь может просматривать только свои заказы а суперпользователь все"""
     current_user = await get_user_by_token(access_token, session)
-    if current_user.is_superuser:
-        orders = await OrderCrud.get_all_orders(session)
-    else:
-        orders = await OrderCrud.get_all_orders(session, current_user.id)
+    orders = await OrderCrud.get_all_orders(session, current_user)
     logger.info("User ID=%s retrieved the order list", current_user.id)
     return [OrderInfo.from_orm(order) for order in orders]
 
