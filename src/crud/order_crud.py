@@ -23,11 +23,11 @@ class OrderCrud:
         return new_order
 
     @staticmethod
-    async def get_all_orders(session: AsyncSession, user_id: int = None):
-        if user_id:
-            result = await session.execute(select(Order).where(Order.user_id == user_id))
-        else:
+    async def get_all_orders(session: AsyncSession, current_user: User):
+        if current_user.is_superuser:
             result = await session.execute(select(Order))
+        else:
+            result = await session.execute(select(Order).where(Order.user_id == current_user.id))
         orders = result.scalars().all()
         return orders
 
