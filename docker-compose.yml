@@ -10,10 +10,12 @@ services:
       - .env
     environment:
       - PYTHONPATH=/app/src
+      - PROMETHEUS_MULTIPROC_DIR=/tmp/prometheus
     ports:
       - '8000:8000'
     volumes:
       - .:/app
+      - prometheus-data:/tmp/prometheus
     command: /bin/bash -c "sleep 10 && ALEMBIC_CONFIG=src/alembic.ini alembic upgrade head && uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload"
     networks:
       - app-network
@@ -82,9 +84,34 @@ services:
     networks:
       - app-network
 
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - "9090:9090"
+    networks:
+      - app-network
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    ports:
+      - "3000:3000"
+    networks:
+      - app-network
+    depends_on:
+      - prometheus
+
 networks:
   app-network:
     driver: bridge
 
 volumes:
   pg_data:
+  prometheus-data:

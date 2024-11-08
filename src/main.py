@@ -1,5 +1,7 @@
 import asyncio
 from fastapi import FastAPI, Request
+from prometheus_client import Counter
+from prometheus_fastapi_instrumentator import Instrumentator
 from pydantic import ValidationError
 from fastapi.responses import JSONResponse
 from config.logger import logger
@@ -11,6 +13,20 @@ from services.kafka.consumers import consume_notification
 app = FastAPI(**AppSettings().model_dump())
 app.include_router(order_router, prefix='/v1/api/orders', tags=["orders"])
 app.include_router(user_router, prefix='/v1/api/users', tags=["user"])
+
+
+instrumentator = Instrumentator()
+instrumentator.instrument(app).expose(app)
+request_counter = Counter('app_requests_total', 'Total number of requests', ['endpoint', 'method'])
+
+@app.middleware("http")
+async def track_requests(request, call_next):
+    response = await call_next(request)
+    endpoint = request.url.path
+    method = request.method
+    request_counter.labels(endpoint=endpoint, method=method).inc()
+    return response
+
 
 asyncio.create_task(consume_notification())
 
