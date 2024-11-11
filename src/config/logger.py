@@ -22,6 +22,9 @@ def create_handler(file_name, level, filter_error=False):
         handler.addFilter(lambda record: record.levelno < logging.ERROR)
 
     return handler
-
-logger.addHandler(create_handler('error.log', logging.ERROR))
-logger.addHandler(create_handler('debug.log', logging.DEBUG, filter_error=True))
+try:
+    logger.addHandler(create_handler('/app/error.log', logging.ERROR))
+    logger.addHandler(create_handler('/app/debug.log', logging.DEBUG, filter_error=True))
+except Exception:
+    logger.addHandler(create_handler('../error.log', logging.ERROR))
+    logger.addHandler(create_handler('../debug.log', logging.DEBUG, filter_error=True))
