@@ -1,18 +1,21 @@
 from typing import Optional
-from pydantic import BaseModel, EmailStr, ConfigDict, validator
+from pydantic import BaseModel, EmailStr, ConfigDict, field_validator
 
 
 class UserInfo(BaseModel):
+    id: int
     username: str
     email: EmailStr
 
     model_config = ConfigDict(from_attributes=True)
 
 
-class UserCreate(UserInfo):
+class UserCreate(BaseModel):
+    username: str
+    email: EmailStr
     password: str
 
-    @validator('password')
+    @field_validator('password')
     def validate_password(cls, value):
         if len(value) < 8:
             raise ValueError('Пароль должен содержать не менее 8 символов')
