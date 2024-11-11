@@ -14,13 +14,14 @@ class TestOrderCreate:
         mock_user = get_access_token_and_user[1]
         order_data = OrderCreate(
             title="Test",
+            price=1.0,
             status=OrderStatus.pending
         )
-        order = Order(id=1, title=order_data.title, status=order_data.status)
+        order = Order(id=1, title=order_data.title, price=order_data.price, status=order_data.status)
 
         mocker.patch('auth.oauth2.get_user_by_token', return_value=mock_user)
         mocker.patch('crud.order_crud.OrderCrud.create_order', return_value=order)
-        produce_mock = mocker.patch('services.kafka.producers.produce_notification')
+        produce_mock = mocker.patch('services.kafka.producers.produce_orders')
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.post(
                 "/v1/api/orders/create/",
@@ -37,6 +38,7 @@ class TestOrderCreate:
     async def test_create_order_unauthorized(self):
         order_data = OrderCreate(
             title="Test",
+            price=1.0,
             status=OrderStatus.pending
         )
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -51,13 +53,14 @@ class TestOrderCreate:
         mock_user = get_access_token_and_user[1]
         order_data = OrderCreate(
             title="Test",
+            price=1.0,
             status=OrderStatus.pending
         )
-        order = Order(id=1, title=order_data.title, status=order_data.status)
+        order = Order(id=1, title=order_data.title,  price=order_data.price, status=order_data.status)
 
         mocker.patch('auth.oauth2.get_user_by_token', return_value=mock_user)
         mocker.patch('crud.order_crud.OrderCrud.create_order', return_value=order)
-        produce_mock = mocker.patch('services.kafka.producers.produce_notification',side_effect=JSONSerializationError("Serialization failed"))
+        produce_mock = mocker.patch('services.kafka.producers.produce_orders',side_effect=JSONSerializationError("Serialization failed"))
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.post(
                 "/v1/api/orders/create/",
@@ -76,8 +79,8 @@ class TestGetOrders:
     async def test_get_orders_user(self, mocker, get_access_token_and_user):
         mock_user = get_access_token_and_user[1]
         orders_list = [
-            Order(id=1, user_id=mock_user.id, title="Test 1", status=OrderStatus.pending),
-            Order(id=2, user_id=2, title="Test 2", status=OrderStatus.done)
+            Order(id=1, user_id=mock_user.id, title="Test 1", status=OrderStatus.pending, price=1.0),
+            Order(id=2, user_id=2, title="Test 2", status=OrderStatus.done, price=1.0)
         ]
         orders_list_allowed = [order for order in orders_list if order.user_id == mock_user.id]
         mocker.patch('crud.order_crud.OrderCrud.get_all_orders', return_value=orders_list_allowed)
@@ -94,8 +97,8 @@ class TestGetOrders:
     async def test_get_orders_superuser(self, mocker, get_access_token_and_superuser):
         mock_user = get_access_token_and_superuser[1]
         orders_list = [
-            Order(id=1, user_id=mock_user.id, title="Test 1", status=OrderStatus.pending),
-            Order(id=2, user_id=2, title="Test 2", status=OrderStatus.done)
+            Order(id=1, user_id=mock_user.id, title="Test 1", status=OrderStatus.pending, price=1.0),
+            Order(id=2, user_id=2, title="Test 2", status=OrderStatus.done, price=1.0)
         ]
         mocker.patch('crud.order_crud.OrderCrud.get_all_orders', return_value=orders_list)
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -115,7 +118,6 @@ class TestGetOrders:
             response = await client.get(
                 "/v1/api/orders/"
             )
-            print(response.json())
         assert response.status_code == 401
 
 
@@ -124,11 +126,11 @@ class TestUpdateStatusOrder:
     async def test_update_status_order_success(self, mocker, get_access_token_and_user):
         mock_user = get_access_token_and_user[1]
         order_update_status = OrderUpdateStatus(status=OrderStatus.in_progress)
-        order = Order(id=1, user_id=mock_user.id, title="Test", status=order_update_status.status)
+        order = Order(id=1, user_id=mock_user.id, title="Test", status=order_update_status.status, price=1.0)
 
         mocker.patch('auth.oauth2.get_user_by_token', return_value=mock_user)
-        mocker.patch('crud.order_crud.OrderCrud.update_status_order', return_value=order)
-        produce_mock = mocker.patch('services.kafka.producers.produce_notification')
+        mocker.patch('crud.order_crud.OrderCrud.get_order', return_value=order)
+        produce_mock = mocker.patch('services.kafka.producers.produce_orders')
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.put(
                 f"/v1/api/orders/{order.id}/",
@@ -145,10 +147,10 @@ class TestUpdateStatusOrder:
     async def test_update_status_order_user_no_permission(self, mocker, get_access_token_and_user):
         mock_user = get_access_token_and_user[1]
         order_update_status = OrderUpdateStatus(status=OrderStatus.in_progress)
-        order = Order(id=1, user_id=2, title="Test", status=order_update_status.status)
+        order = Order(id=1, user_id=2, title="Test", status=order_update_status.status, price=1.0)
 
         mocker.patch('auth.oauth2.get_user_by_token', return_value=mock_user)
-        mocker.patch('crud.order_crud.OrderCrud.update_status_order', side_effect=PermissionDeniedException())
+        mocker.patch('crud.order_crud.OrderCrud.get_order', return_value=order)
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.put(
                 f"/v1/api/orders/{order.id}/",
@@ -159,21 +161,15 @@ class TestUpdateStatusOrder:
         assert response.json() == {"detail": "FORBIDDEN: No permission to perform this action"}
 
     @pytest.mark.asyncio
-    async def test_update_status_order_invalid_status(self, mocker, get_access_token_and_user):
-        mock_user = get_access_token_and_user[1]
+    async def test_update_status_order_unauthorized(self):
         order_update_status = OrderUpdateStatus(status=OrderStatus.in_progress)
-        order = Order(id=1, user_id=2, title="Test", status=order_update_status.status)
-
-        mocker.patch('auth.oauth2.get_user_by_token', return_value=mock_user)
-        mocker.patch('crud.order_crud.OrderCrud.update_status_order', side_effect=HTTPException(status_code=409, detail="Conflict: status not changed"))
+        order = Order(id=1, user_id=2, title="Test", status=order_update_status.status, price=1.0)
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.put(
                 f"/v1/api/orders/{order.id}/",
                 json=order_update_status.model_dump(),
-                headers={"Authorization": f"Bearer {get_access_token_and_user[0]}"}
             )
-        assert response.status_code == 409
-        assert response.json() == {"detail": "Conflict: status not changed"}
+        assert response.status_code == 401
 
 
 
