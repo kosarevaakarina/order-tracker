@@ -15,6 +15,7 @@ class OrderCrud:
             title=order_data.title,
             description=order_data.description,
             status=order_data.status,
+            price=order_data.price,
             user_id=current_user.id
         )
         session.add(new_order)
