@@ -25,3 +25,8 @@ class OrderInfo(OrderCreate):
 
 class OrderUpdateStatus(BaseModel):
     status: OrderStatus
+
+
+class OrderChangeStatus(BaseModel):
+    id: int
+    status: OrderStatus

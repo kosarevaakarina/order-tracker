@@ -8,7 +8,7 @@ from config.logger import logger
 from routers.order_routers import router as order_router
 from routers.user_routers import router as user_router
 from config.settings import AppSettings
-from services.kafka.consumers import consume_notification
+from services.kafka.consumers import consume_orders
 
 app = FastAPI(**AppSettings().model_dump())
 app.include_router(order_router, prefix='/v1/api/orders', tags=["orders"])
@@ -28,7 +28,7 @@ async def track_requests(request, call_next):
     return response
 
 if __name__ == "src.main":
-    asyncio.create_task(consume_notification())
+    asyncio.create_task(consume_orders())
 
 
 @app.exception_handler(ValidationError)
