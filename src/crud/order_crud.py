@@ -38,13 +38,13 @@ class OrderCrud:
         return order
 
     @staticmethod
-    async def update_status_order(session: AsyncSession, order_data: OrderUpdateStatus, current_user: User):
-        order = await OrderCrud.get_order(order_data.id, session)
+    async def update_status_order(session: AsyncSession, order_id: int, order_data: OrderUpdateStatus, current_user: User):
+        order = await OrderCrud.get_order(order_id, session)
         if not (current_user.is_superuser or current_user.id == order.user_id):
             logger.error("FORBIDDEN: Insufficient permissions to change the status of order ID=%s for user ID=%s", order.id, current_user.id)
             raise PermissionDeniedException()
         if order.status == order_data.status:
-            logger.warning("Conflict: Failed to change the status for order ID=%s", order_data.id)
+            logger.warning("Conflict: Failed to change the status for order ID=%s", order_id)
             raise HTTPException(status_code=409, detail="Conflict: status not changed")
         if order:
             order.status = order_data.status

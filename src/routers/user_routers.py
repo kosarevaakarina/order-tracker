@@ -1,5 +1,5 @@
 from datetime import timedelta
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Body
 from typing import Annotated, List
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,10 +25,10 @@ async def get_all_users(
     check_permissions_users(current_user, superuser_only=True)
     users = await UserCrud.get_users(session)
     logger.info("Retrieving the list of users by user ID=%s", current_user.id)
-    return [UserInfo.from_orm(user) for user in users]
+    return [UserInfo.model_validate(user) for user in users]
 
 
-@router.get('/{id}', response_model=UserInfo)
+@router.get('/{user_id}', response_model=UserInfo)
 async def get_user_detail(
     access_token: Annotated[str, Depends(oauth2_schema)],
     user_id: int,
@@ -47,7 +47,7 @@ async def get_user_detail(
 
 @router.post('/register', response_model=UserInfo)
 async def register(
-    request: Annotated[UserCreate, Depends()],
+    request: UserCreate = Body(...),
     session: AsyncSession = Depends(get_session)
 ):
     """Регистрация пользователя """
@@ -56,11 +56,11 @@ async def register(
     return user
 
 
-@router.put('/{id}/update', response_model=UserInfo)
+@router.put('/{user_id}/update', response_model=UserInfo)
 async def update_user(
     user_id: int,
     access_token: Annotated[str, Depends(oauth2_schema)],
-    request: Annotated[UserUpdate, Depends()],
+    request: UserUpdate = Body(...),
     session: AsyncSession = Depends(get_session)
 ):
     """Обновление иноформации о пользователе, доступно пользователю и суперпользователю"""
@@ -75,7 +75,7 @@ async def update_user(
     return update_user
 
 
-@router.delete('/{id}/delete', response_model=UserInfo)
+@router.delete('/{user_id}/delete', response_model=UserInfo)
 async def delete_user(
         user_id: int,
         access_token: Annotated[str, Depends(oauth2_schema)],

@@ -9,7 +9,6 @@ async def consume_notification():
     try:
         consumer = AIOKafkaConsumer(
             'order_notifications',
-            loop=loop,
             bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
             group_id='group-id'
         )

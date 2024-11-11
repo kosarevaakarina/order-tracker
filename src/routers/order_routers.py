@@ -1,6 +1,6 @@
 import json
 from typing import Annotated, List
-from fastapi import Depends, APIRouter
+from fastapi import Depends, APIRouter, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 from auth.oauth2 import oauth2_schema, get_user_by_token
 from config.db import get_session
@@ -12,10 +12,10 @@ from services.kafka.producers import produce_notification
 
 router = APIRouter()
 
-@router.post("create/", response_model=OrderCreate)
+@router.post("/create/", response_model=OrderCreate)
 async def create_order(
     access_token: Annotated[str, Depends(oauth2_schema)],
-    order_data: Annotated[OrderCreate, Depends()],
+    order_data: OrderCreate = Body(...),
     session: AsyncSession = Depends(get_session)
 ):
     """Создание заказа"""
@@ -44,20 +44,21 @@ async def get_orders(
     current_user = await get_user_by_token(access_token, session)
     orders = await OrderCrud.get_all_orders(session, current_user)
     logger.info("User ID=%s retrieved the order list", current_user.id)
-    return [OrderInfo.from_orm(order) for order in orders]
+    return [OrderInfo.model_validate(order) for order in orders]
 
 
 @router.put("/{order_id}/", response_model=OrderInfo)
 async def update_status_order(
     access_token: Annotated[str, Depends(oauth2_schema)],
-    order_data: Annotated[OrderUpdateStatus, Depends()],
+    order_id: int,
+    order_data: OrderUpdateStatus = Body(...),
     session: AsyncSession = Depends(get_session)
 ):
     """Изменение статуса заказа"""
     current_user = await get_user_by_token(access_token, session)
     previous_status = order_data.status
-    order = await OrderCrud().update_status_order(session, order_data, current_user)
-    logger.info("Order ID=%s status changed by user ID=%s", order.id, current_user.id)
+    order = await OrderCrud().update_status_order(session, order_id, order_data, current_user)
+    logger.info("Order ID=%s status changed by user ID=%s", order_id, current_user.id)
     try:
         notification = json.dumps({
             "type": "update",

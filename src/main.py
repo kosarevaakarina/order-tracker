@@ -27,8 +27,8 @@ async def track_requests(request, call_next):
     request_counter.labels(endpoint=endpoint, method=method).inc()
     return response
 
-
-asyncio.create_task(consume_notification())
+if __name__ == "src.main":
+    asyncio.create_task(consume_notification())
 
 
 @app.exception_handler(ValidationError)
