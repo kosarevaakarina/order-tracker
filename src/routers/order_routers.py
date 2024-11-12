@@ -21,12 +21,12 @@ async def create_order(
     """Создание заказа"""
     current_user = await get_user_by_token(access_token, session)
     try:
-        notification = json.dumps({
+        produce_data = json.dumps({
             "type": "create",
             "order_data": order_data.model_dump(),
             "user_id": current_user.id,
         })
-        await produce_orders(data_json=notification)
+        await produce_orders(data_json=produce_data)
     except Exception as e:
         logger.error(f"JSON serialization error: {e}")
         JSONSerializationError(e)

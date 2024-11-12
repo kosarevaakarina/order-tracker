@@ -2,17 +2,19 @@ import enum
 from datetime import datetime
 
 from sqlalchemy import Column, Integer, String, Enum, ForeignKey, DateTime, Float
-from sqlalchemy.orm import relationship, validates
+from sqlalchemy.orm import relationship
 from config.db import Base
 
 
 class OrderStatus(str, enum.Enum):
+    """Статус заказа"""
     pending = 'pending'
     in_progress = 'in_progress'
     done = 'done'
 
 
 class Order(Base):
+    """Модель Заказа"""
     __tablename__ = 'orders'
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String)
@@ -23,9 +25,3 @@ class Order(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     price = Column(Float)
-
-    @validates('price')
-    def validate_price(self, key, value):
-        if value <= 0:
-            raise ValueError("Price must be greater than 0")
-        return value

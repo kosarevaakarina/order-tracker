@@ -1,7 +1,6 @@
 import pytest
-from fastapi import HTTPException
 from httpx import AsyncClient, ASGITransport
-from exceptions import JSONSerializationError, PermissionDeniedException
+from exceptions import JSONSerializationError
 from main import app
 from models.orders import Order, OrderStatus
 from schemas.order_schema import OrderCreate, OrderUpdateStatus

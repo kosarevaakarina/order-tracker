@@ -191,7 +191,7 @@ class TestGetUserDetail:
         mocker.patch('crud.user_crud.UserCrud.get_user', return_value=mock_user)
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get(
-                '/v1/api/users/1',
+                f'/v1/api/users/{mock_user.id}',
                 headers={"Authorization": f"Bearer {get_access_token_and_superuser[0]}"}
             )
         assert response.status_code == 200
@@ -226,21 +226,6 @@ class TestGetUserDetail:
         assert response.status_code == 404
         assert response.json()['detail'] == 'Not found: User does not exist'
 
-    # async def test_get_user_detail_forbidden_for_non_superuser(self, mocker, get_access_token_and_user):
-    #     other_mock_user = User(
-    #         username="user2",
-    #         email="user2@mail.com",
-    #         hashed_password="Password123!!",
-    #     )
-    #     other_mock_user.id = 2
-    #     mocker.patch('auth.oauth2.get_user_by_token', return_value=get_access_token_and_user[1])
-    #     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-    #         response = await client.get(
-    #             '/v1/api/users/2',
-    #             headers={"Authorization": f"Bearer {get_access_token_and_user[0]}"}
-    #         )
-    #     assert response.status_code == 403
-
 
 @pytest.mark.asyncio
 class TestPutUpdateUser:
@@ -263,7 +248,7 @@ class TestPutUpdateUser:
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.put(
-                '/v1/api/users/1/update',
+                f'/v1/api/users/{mock_updated_user.id}/update',
                 headers={"Authorization": f"Bearer {get_access_token_and_superuser[0]}"},
                 json=user_update.model_dump()
             )
@@ -291,30 +276,12 @@ class TestPutUpdateUser:
         assert response.status_code == 404
         assert response.json()['detail'] == 'Not found: User does not exist'
 
-    # async def test_update_user_permission_denied(self, mocker, get_access_token_and_user):
-    #     mock_user = get_access_token_and_user[1]
-    #     user_update = UserUpdate(
-    #         username="updateduser",
-    #         email="updateduser@mail.com",
-    #         password="newpassword"
-    #     )
-    #     mocker.patch('auth.oauth2.get_user_by_token', return_value=mock_user)
-    #     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-    #         response = await client.put(
-    #             '/v1/api/users/1/update',
-    #             headers={"Authorization": f"Bearer {get_access_token_and_user[0]}"},
-    #             json=user_update.model_dump()
-    #         )
-    #     assert response.status_code == 403
-    #     assert response.json()['detail'] == "FORBIDDEN: Insufficient permissions for user ID=1"
-
 
 @pytest.mark.asyncio
 class TestDeleteUser:
 
     async def test_delete_user_success(self, mocker, get_access_token_and_superuser):
         mock_user = get_access_token_and_superuser[1]
-
         mocker.patch('auth.oauth2.get_user_by_token', return_value=mock_user)
         mocker.patch('crud.user_crud.UserCrud.get_user', return_value=mock_user)
         mocker.patch('crud.user_crud.UserCrud.delete_user', return_value=mock_user)
@@ -345,7 +312,6 @@ class TestDeleteUser:
 
     async def test_delete_user_permission_denied(self, mocker, get_access_token_and_user):
         mock_user = get_access_token_and_user[1]
-
         mocker.patch('auth.oauth2.get_user_by_token', return_value=mock_user)
         mocker.patch('crud.user_crud.UserCrud.get_user', return_value=mock_user)
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -366,7 +332,6 @@ class TestDeleteUser:
         assert response.json()['detail'] == "Not authenticated"
 
     async def test_delete_user_invalid_token(self, mocker, get_access_token_and_user):
-        mock_user = get_access_token_and_user[1]
         mocker.patch('auth.oauth2.get_user_by_token', side_effect=Exception("Invalid token"))
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:

@@ -17,11 +17,12 @@ load_dotenv()
 oauth2_schema = OAuth2PasswordBearer(tokenUrl='/v1/api/users/token')
 
 SECRET_KEY = os.getenv('SECRET_KEY')
-ALGORITHM = 'HS256'
+ALGORITHM = os.getenv('ALGORITHM')
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+    """Создание токена авторизации"""
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
@@ -34,6 +35,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 
 
 async def get_current_user(token: str = Depends(oauth2_schema), session: AsyncSession = Depends(get_session)):
+    """Получение пользователя по токену авторизации"""
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         decode_username: str = payload.get('username')
@@ -48,6 +50,7 @@ async def get_current_user(token: str = Depends(oauth2_schema), session: AsyncSe
 
 
 async def get_user_by_token(access_token: str, session: AsyncSession):
+    """Получение пользователя по токену или выбрасывание исключения, если он не найден"""
     current_user = await get_current_user(access_token, session)
     if not current_user:
         logger.error("Not found: User with token: %s not exist", access_token)

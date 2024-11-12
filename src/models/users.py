@@ -6,6 +6,7 @@ from fastapi_users_db_sqlalchemy import SQLAlchemyBaseUserTable
 
 
 class User(SQLAlchemyBaseUserTable[int], Base):
+    """Модель пользователя"""
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
     username: Mapped[str] = Column(
