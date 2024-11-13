@@ -6,7 +6,7 @@ from config.db import Base
 
 
 class NotificationType(str, enum.Enum):
-    """Статус заказа"""
+    """Тип рассылки"""
     create = 'create'
     update = 'update'
 
