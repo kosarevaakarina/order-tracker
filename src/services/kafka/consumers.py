@@ -28,22 +28,31 @@ async def consume_orders():
                 if order_msg['type'] == 'create':
                     order = await OrderCrud.create_order(order_data, current_user, session)
                     logger.info("Order ID=%s created by user ID=%s", order.id, current_user.id)
-                    notification_data = await mail_service.notify_order_creation(
-                        to_email=current_user.email,
-                        order_id=order.id,
-                        type=order_msg.get('type'),
-                    )
+                    try:
+                        notification_data = await mail_service.notify_order_creation(
+                            to_email=current_user.email,
+                            order_id=order.id,
+                            type=order_msg.get('type'),
+                        )
+                    except Exception as e:
+                        notification_data = None
+                        logger.error(f"SMTP Error: {e}")
                 else:
                     order_id = order_data.get('id')
                     order = await OrderCrud().update_status_order(session, order_id, order_data)
                     logger.info("Order ID=%s status changed by user ID=%s", order_id, current_user.id)
-                    notification_data = await mail_service.notify_order_status_update(
-                        to_email=current_user.email,
-                        order_data=order_data,
-                        previous_status=order_msg['previous_status'],
-                        type=order_msg.get('type'),
-                    )
-                await NotificationCrud.create_notification(session, notification_data)
+                    try:
+                        notification_data = await mail_service.notify_order_status_update(
+                            to_email=current_user.email,
+                            order_data=order_data,
+                            previous_status=order_msg['previous_status'],
+                            type=order_msg.get('type'),
+                        )
+                    except Exception as e:
+                        notification_data = None
+                        logger.error(f"SMTP Error: {e}")
+                if notification_data:
+                    await NotificationCrud.create_notification(session, notification_data)
         except Exception as e:
             logger.error(f"Error in Kafka consumer: {e}")
         finally:

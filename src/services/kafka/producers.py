@@ -1,6 +1,6 @@
 from aiokafka import AIOKafkaProducer
 
-from services.kafka.settings import loop, KAFKA_BOOTSTRAP_SERVERS
+from services.kafka.settings import KAFKA_BOOTSTRAP_SERVERS
 
 
 async def produce_orders(data_json):

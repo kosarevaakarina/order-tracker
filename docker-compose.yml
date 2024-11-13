@@ -16,7 +16,7 @@ services:
     volumes:
       - .:/app
       - prometheus-data:/tmp/prometheus
-    command: /bin/bash -c "sleep 10 && ALEMBIC_CONFIG=src/alembic.ini alembic upgrade head && uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload"
+    command: /bin/bash -c "sleep 10 && ALEMBIC_CONFIG=src/alembic.ini alembic upgrade head && pytest src/test && uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload"
     networks:
       - app-network
 
