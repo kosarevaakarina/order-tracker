@@ -39,7 +39,7 @@ async def consume_orders():
                         logger.error(f"SMTP Error: {e}")
                 else:
                     order_id = order_data.get('id')
-                    order = await OrderCrud().update_status_order(session, order_id, order_data)
+                    order = await OrderCrud.update_status_order(session, order_id, order_data)
                     logger.info("Order ID=%s status changed by user ID=%s", order_id, current_user.id)
                     try:
                         notification_data = await mail_service.notify_order_status_update(
