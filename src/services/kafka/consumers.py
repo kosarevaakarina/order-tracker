@@ -2,6 +2,7 @@ from aiokafka import AIOKafkaConsumer
 import json
 from config.db import get_session
 from config.logger import logger
+from crud.notification_crud import NotificationCrud
 from crud.order_crud import OrderCrud
 from crud.user_crud import UserCrud
 from services.kafka.settings import KAFKA_BOOTSTRAP_SERVERS
@@ -27,19 +28,22 @@ async def consume_orders():
                 if order_msg['type'] == 'create':
                     order = await OrderCrud.create_order(order_data, current_user, session)
                     logger.info("Order ID=%s created by user ID=%s", order.id, current_user.id)
-                    await mail_service.notify_order_creation(
+                    notification_data = await mail_service.notify_order_creation(
                         to_email=current_user.email,
-                        order_id=order.id
+                        order_id=order.id,
+                        type=order_msg.get('type'),
                     )
                 else:
                     order_id = order_data.get('id')
                     order = await OrderCrud().update_status_order(session, order_id, order_data)
                     logger.info("Order ID=%s status changed by user ID=%s", order_id, current_user.id)
-                    await mail_service.notify_order_status_update(
+                    notification_data = await mail_service.notify_order_status_update(
                         to_email=current_user.email,
                         order_data=order_data,
-                        previous_status=order_msg['previous_status']
+                        previous_status=order_msg['previous_status'],
+                        type=order_msg.get('type'),
                     )
+                await NotificationCrud.create_notification(session, notification_data)
         except Exception as e:
             logger.error(f"Error in Kafka consumer: {e}")
         finally:
